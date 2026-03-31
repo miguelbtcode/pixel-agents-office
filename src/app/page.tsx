@@ -4,6 +4,8 @@ import { useState } from 'react';
 import OfficeCanvas from '@/components/office/OfficeCanvas';
 import AgentCard from '@/components/agents/AgentCard';
 import ActivityLog from '@/components/activity/ActivityLog';
+import FurniturePanel from '@/components/editor/FurniturePanel';
+import ThemeSelector from '@/components/editor/ThemeSelector';
 import { agentProfiles } from '@/data/agentProfiles';
 import { useOfficeStore } from '@/store/useOfficeStore';
 
@@ -38,19 +40,37 @@ export default function Home() {
 
       {/* Body row: sidebar + canvas + log */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar: Agent Cards — hidden on mobile */}
+        {/* Left Sidebar — hidden on mobile */}
         <aside className="hidden md:flex flex-col w-60 shrink-0 bg-slate-900 border-r-2 border-slate-700 overflow-hidden">
-          {/* Header */}
-          <div className="px-3 py-2 border-b-2 border-slate-700 bg-slate-800 shrink-0">
-            <span className="font-pixel text-[7px] text-violet-300 tracking-wide">AGENTS</span>
-          </div>
+          {isEditorMode ? (
+            /* Editor mode: show FurniturePanel + ThemeSelector */
+            <>
+              {/* FurniturePanel takes remaining height */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <FurniturePanel />
+              </div>
 
-          {/* Agent card list */}
-          <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-2 px-2">
-            {agentProfiles.map((profile) => (
-              <AgentCard key={profile.id} agentId={profile.id} />
-            ))}
-          </div>
+              {/* ThemeSelector at bottom */}
+              <div className="shrink-0 border-t-2 border-slate-700 bg-slate-800 p-2">
+                <ThemeSelector />
+              </div>
+            </>
+          ) : (
+            /* Normal mode: Agent Cards */
+            <>
+              {/* Header */}
+              <div className="px-3 py-2 border-b-2 border-slate-700 bg-slate-800 shrink-0">
+                <span className="font-pixel text-[7px] text-violet-300 tracking-wide">AGENTS</span>
+              </div>
+
+              {/* Agent card list */}
+              <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-2 px-2">
+                {agentProfiles.map((profile) => (
+                  <AgentCard key={profile.id} agentId={profile.id} />
+                ))}
+              </div>
+            </>
+          )}
         </aside>
 
         {/* Center: Office Canvas */}
@@ -69,6 +89,12 @@ export default function Home() {
 
         {/* Right Sidebar: Activity Log — hidden on mobile by default */}
         <aside className="hidden lg:flex flex-col w-72 shrink-0 bg-slate-900 border-l-2 border-slate-700 overflow-hidden">
+          {/* Editor mode: show ThemeSelector at top of right panel on large screens */}
+          {isEditorMode && (
+            <div className="shrink-0 border-b-2 border-slate-700 bg-slate-800 p-2">
+              <ThemeSelector />
+            </div>
+          )}
           <ActivityLog className="flex-1 overflow-hidden" />
         </aside>
       </div>
