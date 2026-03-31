@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAgentStore } from '@/store/useAgentStore';
 import { useOfficeStore } from '@/store/useOfficeStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { GameLoop } from '@/engine/GameLoop';
 import { Renderer, TILE_SIZE } from '@/engine/Renderer';
 import { TileMap } from '@/engine/TileMap';
@@ -10,9 +11,11 @@ import { Pathfinder } from '@/engine/Pathfinder';
 import { SpriteSheet, AGENT_ANIMATIONS } from '@/engine/SpriteSheet';
 import { mapLayout } from '@/data/mapLayout';
 import { Scheduler } from '@/simulation/Scheduler';
+import { getFurnitureById } from '@/data/furnitureCatalog';
 import MiniMap from '@/components/office/MiniMap';
 import AgentEditor from '@/components/agents/AgentEditor';
 import type { AgentId } from '@/types/agent';
+import type { FurnitureItem } from '@/types/office';
 
 // Movement speed: tiles per second
 const TILES_PER_SECOND = 3;
@@ -40,6 +43,9 @@ export default function OfficeCanvas() {
 
   // Per-agent SpriteSheet instances keyed by AgentId
   const spriteSheets = useRef<Record<string, SpriteSheet>>({});
+
+  // Editor state
+  const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
   // Camera drag state
   const isDragging = useRef(false);
