@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAgentStore } from '@/store/useAgentStore';
 import { useOfficeStore } from '@/store/useOfficeStore';
+import { useEditorStore } from '@/store/useEditorStore';
 import { GameLoop } from '@/engine/GameLoop';
 import { Renderer, TILE_SIZE } from '@/engine/Renderer';
 import { TileMap } from '@/engine/TileMap';
@@ -10,9 +11,11 @@ import { Pathfinder } from '@/engine/Pathfinder';
 import { SpriteSheet, AGENT_ANIMATIONS } from '@/engine/SpriteSheet';
 import { mapLayout } from '@/data/mapLayout';
 import { Scheduler } from '@/simulation/Scheduler';
+import { getFurnitureById } from '@/data/furnitureCatalog';
 import MiniMap from '@/components/office/MiniMap';
 import AgentEditor from '@/components/agents/AgentEditor';
 import type { AgentId } from '@/types/agent';
+import type { FurnitureItem } from '@/types/office';
 
 // Movement speed: tiles per second
 const TILES_PER_SECOND = 3;
@@ -41,6 +44,9 @@ export default function OfficeCanvas() {
   // Per-agent SpriteSheet instances keyed by AgentId
   const spriteSheets = useRef<Record<string, SpriteSheet>>({});
 
+  // Editor state
+  const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
+
   // Camera drag state
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -53,9 +59,33 @@ export default function OfficeCanvas() {
   const agentsRef = useRef(useAgentStore.getState().agents);
   const furnitureRef = useRef(useOfficeStore.getState().furniture);
 
+  // Keep editor state in refs for use inside the game loop render callback
+  const isEditorModeRef = useRef(useOfficeStore.getState().isEditorMode);
+  const selectedCatalogIdRef = useRef(useEditorStore.getState().selectedCatalogId);
+  const hoveredTileRef = useRef<{ x: number; y: number } | null>(null);
+
   // Sync agents to React state for MiniMap (throttled via rAF tick)
   const agentsForMiniMap = useAgentStore((state) => state.agents);
   const rooms = useOfficeStore((state) => state.rooms);
+
+  // Subscribe to editor store for selectedCatalogId ref updates
+  useEffect(() => {
+    const unsubEditor = useEditorStore.subscribe((state) => {
+      selectedCatalogIdRef.current = state.selectedCatalogId;
+    });
+    const unsubOfficeEditor = useOfficeStore.subscribe((state) => {
+      isEditorModeRef.current = state.isEditorMode;
+    });
+    return () => {
+      unsubEditor();
+      unsubOfficeEditor();
+    };
+  }, []);
+
+  // Sync hoveredTile React state to ref for use in game loop
+  useEffect(() => {
+    hoveredTileRef.current = hoveredTile;
+  }, [hoveredTile]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -209,6 +239,42 @@ export default function OfficeCanvas() {
       r.clear();
       r.drawMap(furniture);
 
+      // ── Editor placement preview ──────────────────────────────
+      const editorMode = isEditorModeRef.current;
+      const catalogId = selectedCatalogIdRef.current;
+      const hovered = hoveredTileRef.current;
+
+      if (editorMode && catalogId && hovered) {
+        const def = getFurnitureById(catalogId);
+        if (def) {
+          // Check if placement is valid (no wall tiles under footprint)
+          const tMap = tileMapRef.current;
+          let isValid = true;
+          if (tMap) {
+            for (let dy = 0; dy < def.tileHeight; dy++) {
+              for (let dx = 0; dx < def.tileWidth; dx++) {
+                const tileVal = tMap.getTile(hovered.x + dx, hovered.y + dy);
+                // Tile value 2 = wall, 0 = void
+                if (tileVal === 2 || tileVal === 0) {
+                  isValid = false;
+                  break;
+                }
+              }
+              if (!isValid) break;
+            }
+          }
+
+          r.drawPlacementPreview(
+            hovered.x,
+            hovered.y,
+            def.tileWidth,
+            def.tileHeight,
+            def.color,
+            isValid
+          );
+        }
+      }
+
       // Sort agents by pixel y so southern agents render on top
       const sortedIds = [...agentIds].sort((a, b) => {
         const ay = agents[a]?.position.py ?? 0;
@@ -279,6 +345,19 @@ export default function OfficeCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Keyboard: ESC cancels placement ───────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        useEditorStore.getState().selectCatalogItem(null);
+        useEditorStore.getState().selectFurniture(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // ── Camera pan with mouse ──────────────────────────────────────
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -292,9 +371,17 @@ export default function OfficeCanvas() {
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging.current) return;
     const r = rendererRef.current;
     if (!r) return;
+
+    // Always track hovered tile for editor placement preview
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+    const screenX = e.clientX - rect.left;
+    const screenY = e.clientY - rect.top;
+    const tile = r.screenToTile(screenX, screenY);
+    setHoveredTile(tile);
+
+    if (!isDragging.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     dragDistance.current = Math.sqrt(dx * dx + dy * dy);
@@ -309,7 +396,7 @@ export default function OfficeCanvas() {
       dragDistance.current = 0;
 
       if (!wasDrag) {
-        // Treat as a click — check for agent hit
+        // Treat as a click
         const r = rendererRef.current;
         if (!r) return;
 
@@ -318,14 +405,81 @@ export default function OfficeCanvas() {
         const screenY = e.clientY - rect.top;
         const tile = r.screenToTile(screenX, screenY);
 
-        const agents = agentsRef.current;
-        const agentIds: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
-        for (const id of agentIds) {
-          const agent = agents[id];
-          if (!agent) continue;
-          if (agent.position.x === tile.x && agent.position.y === tile.y) {
-            setSelectedAgentId(id);
-            break;
+        const isEditorMode = useOfficeStore.getState().isEditorMode;
+
+        if (isEditorMode) {
+          const { selectedCatalogId, selectCatalogItem, selectFurniture, pushHistory } =
+            useEditorStore.getState();
+
+          if (selectedCatalogId) {
+            // Validate placement: no wall (2) or void (0) tiles under footprint
+            const def = getFurnitureById(selectedCatalogId);
+            if (def) {
+              const tMap = tileMapRef.current;
+              let isValid = true;
+              if (tMap) {
+                for (let dy = 0; dy < def.tileHeight; dy++) {
+                  for (let dx = 0; dx < def.tileWidth; dx++) {
+                    const tileVal = tMap.getTile(tile.x + dx, tile.y + dy);
+                    if (tileVal === 2 || tileVal === 0) {
+                      isValid = false;
+                      break;
+                    }
+                  }
+                  if (!isValid) break;
+                }
+              }
+
+              if (isValid) {
+                const newId = Date.now().toString();
+                const newItem: FurnitureItem = {
+                  id: newId,
+                  catalogId: selectedCatalogId,
+                  name: def.name,
+                  x: tile.x,
+                  y: tile.y,
+                  width: def.tileWidth,
+                  height: def.tileHeight,
+                  color: def.color,
+                  walkable: def.walkable,
+                };
+                useOfficeStore.getState().addFurniture(newItem);
+                pushHistory({
+                  type: 'add',
+                  furnitureId: newId,
+                  after: { x: tile.x, y: tile.y },
+                });
+                // Keep catalog item selected for rapid placement
+              }
+            }
+          } else {
+            // Click on existing furniture tile → select it
+            const furniture = useOfficeStore.getState().furniture;
+            const clicked = furniture.find(
+              (f) =>
+                tile.x >= f.x &&
+                tile.x < f.x + f.width &&
+                tile.y >= f.y &&
+                tile.y < f.y + f.height
+            );
+            if (clicked) {
+              selectFurniture(clicked.id);
+            } else {
+              selectFurniture(null);
+              selectCatalogItem(null);
+            }
+          }
+        } else {
+          // Non-editor mode: check for agent hit
+          const agents = agentsRef.current;
+          const agentIds: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
+          for (const id of agentIds) {
+            const agent = agents[id];
+            if (!agent) continue;
+            if (agent.position.x === tile.x && agent.position.y === tile.y) {
+              setSelectedAgentId(id);
+              break;
+            }
           }
         }
       }
@@ -335,6 +489,7 @@ export default function OfficeCanvas() {
 
   const handleMouseLeave = useCallback(() => {
     isDragging.current = false;
+    setHoveredTile(null);
   }, []);
 
   // ── Scroll to zoom ─────────────────────────────────────────────
@@ -388,6 +543,14 @@ export default function OfficeCanvas() {
     setCameraState({ cameraX: r.cameraX, cameraY: r.cameraY, zoom: r.zoom });
   }, [canvasSize]);
 
+  // Determine cursor style based on editor mode
+  const isEditorMode = useOfficeStore((state) => state.isEditorMode);
+  const selectedCatalogId = useEditorStore((state) => state.selectedCatalogId);
+  const cursorClass =
+    isEditorMode && selectedCatalogId
+      ? 'cursor-crosshair'
+      : 'cursor-grab active:cursor-grabbing';
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Loading overlay */}
@@ -405,7 +568,7 @@ export default function OfficeCanvas() {
       {/* Main canvas */}
       <canvas
         ref={canvasRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className={`w-full h-full ${cursorClass}`}
         style={{ imageRendering: 'pixelated' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -416,6 +579,17 @@ export default function OfficeCanvas() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
+
+      {/* Editor mode placement hint overlay */}
+      {isEditorMode && selectedCatalogId && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <div className="bg-slate-900/80 border border-violet-500 px-3 py-1">
+            <span className="font-pixel text-[7px] text-violet-300 tracking-wide">
+              CLICK TO PLACE • ESC TO CANCEL
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* MiniMap overlay — bottom-left */}
       {!isLoading && (

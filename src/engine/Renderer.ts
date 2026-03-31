@@ -560,6 +560,46 @@ class Renderer {
   }
 
   // ─────────────────────────────────────────────
+  // Editor placement preview
+  // ─────────────────────────────────────────────
+
+  /**
+   * Draw a semi-transparent placement preview rectangle at the given tile
+   * position with the given footprint dimensions. Call this after drawMap
+   * and before drawing agents so it renders above the map.
+   */
+  drawPlacementPreview(
+    tileX: number,
+    tileY: number,
+    tileW: number,
+    tileH: number,
+    color: string,
+    isValid: boolean
+  ): void {
+    this.ctx.save();
+    this.applyCamera();
+
+    const px = tileX * TILE_SIZE;
+    const py = tileY * TILE_SIZE;
+    const pw = tileW * TILE_SIZE;
+    const ph = tileH * TILE_SIZE;
+
+    // Semi-transparent fill
+    this.ctx.globalAlpha = 0.5;
+    this.ctx.fillStyle = isValid ? color : '#ef4444';
+    this.ctx.fillRect(px, py, pw, ph);
+
+    // Border
+    this.ctx.globalAlpha = 0.9;
+    this.ctx.strokeStyle = isValid ? '#a78bfa' : '#fca5a5';
+    this.ctx.lineWidth = 2 / this.zoom;
+    this.ctx.strokeRect(px + 1, py + 1, pw - 2, ph - 2);
+
+    this.ctx.globalAlpha = 1;
+    this.ctx.restore();
+  }
+
+  // ─────────────────────────────────────────────
   // Camera helpers
   // ─────────────────────────────────────────────
 
