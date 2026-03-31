@@ -2,14 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pixel font - use system monospace as fallback for pixel-art feel */
+@font-face {
+  font-family: 'PixelFont';
+  src: local('Press Start 2P'), local('Courier New');
+  font-display: swap;
+}
+
 :root {
-  --color-bg: #1a1a2e;
-  --color-surface: #16213e;
-  --color-surface-2: #0f3460;
-  --color-accent: #e94560;
-  --color-text: #eaeaea;
-  --color-text-muted: #8892a4;
-  --pixel-size: 2px;
+  /* Gather/Pixel-agents inspired palette */
+  --color-bg: #1e1e2e;
+  --color-surface: #252540;
+  --color-surface-2: #2a2a4a;
+  --color-border: #4a4a6a;
+  --color-border-light: #6a6a8a;
+  --color-accent: #5a8cff;
+  --color-accent-green: #5ac88c;
+  --color-text: #e0e0f0;
+  --color-text-muted: #8888aa;
+  --pixel-shadow: #0a0a14;
 }
 
 * {
@@ -20,7 +31,7 @@
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'PixelFont', 'Courier New', monospace;
   overflow: hidden;
 }
 
@@ -31,14 +42,17 @@ canvas {
 
 /* Pixel art scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--color-surface);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-surface-2);
-  border: 2px solid var(--color-accent);
+  border: 1px solid var(--color-border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border);
 }
 
 /* Mobile viewport fix */
@@ -66,8 +80,52 @@ canvas {
   animation: slide-up 0.3s ease-out forwards;
 }
 
+/* Vignette overlay for immersive feel */
+.vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(10, 10, 20, 0.6) 100%);
+  z-index: 5;
+}
+
+/* Floating panel glass effect */
+.panel-glass {
+  background: rgba(30, 30, 46, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid var(--color-border);
+  box-shadow: 2px 2px 0px var(--pixel-shadow);
+}
+
+/* Agent label floating style */
+.agent-label {
+  background: rgba(30, 30, 46, 0.75);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 /* Pixel font sizes for mobile */
 @media (max-width: 768px) {
   .pixel-text-sm { font-size: 6px; }
   body { font-size: 8px; }
+}
+
+/* Pulse animation for active agents */
+@keyframes agent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-agent-pulse {
+  animation: agent-pulse 1.5s ease-in-out infinite;
+}
+
+/* Smooth fade in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { clsx } from 'clsx';
 import { useActivityStore } from '@/store/useActivityStore';
 import { agentProfiles } from '@/data/agentProfiles';
 import { ACTIVITY_ICONS, ACTIVITY_LABELS } from '@/types/activity';
@@ -53,19 +52,21 @@ export default function ActivityFilter() {
     filter.searchText.trim() !== '';
 
   return (
-    <div className="bg-slate-800 border-b-2 border-slate-700 shrink-0">
-      {/* Filter header toggle */}
+    <div className="shrink-0" style={{ borderBottom: '1px solid var(--color-border)' }}>
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-slate-700/50 transition-colors"
+        className="w-full flex items-center justify-between px-2 py-1.5 transition-colors"
+        style={{ color: 'var(--color-text-muted)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
       >
         <div className="flex items-center gap-1.5">
-          <span className="font-pixel text-[7px] text-slate-400 tracking-wide">FILTERS</span>
+          <span className="font-pixel text-[7px] tracking-wide">FILTERS</span>
           {hasActiveFilters && (
-            <span className="w-1.5 h-1.5 bg-violet-400 inline-block" />
+            <span style={{ width: 5, height: 5, backgroundColor: 'var(--color-accent)', display: 'inline-block' }} />
           )}
         </div>
-        <span className="font-pixel text-[8px] text-slate-500">
+        <span className="font-pixel text-[8px]">
           {collapsed ? '▶' : '▼'}
         </span>
       </button>
@@ -78,12 +79,19 @@ export default function ActivityFilter() {
             value={filter.searchText}
             onChange={(e) => setFilter({ searchText: e.target.value })}
             placeholder="Search..."
-            className="w-full bg-slate-900 border-2 border-slate-600 text-slate-200 font-pixel text-[7px] px-2 py-1 outline-none focus:border-violet-500 placeholder:text-slate-600 leading-none"
+            className="w-full font-pixel text-[7px] px-2 py-1 outline-none leading-none"
+            style={{
+              backgroundColor: 'rgba(18,18,30,0.6)',
+              border: '2px solid var(--color-border)',
+              color: 'var(--color-text)',
+            }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
           />
 
           {/* Agent toggles */}
           <div>
-            <div className="font-pixel text-[6px] text-slate-500 mb-1 tracking-wide">AGENTS</div>
+            <div className="font-pixel text-[6px] mb-1 tracking-wide" style={{ color: 'var(--color-text-muted)' }}>AGENTS</div>
             <div className="flex flex-wrap gap-1">
               {agentProfiles.map((agent) => {
                 const active = filter.agents.includes(agent.id);
@@ -91,13 +99,12 @@ export default function ActivityFilter() {
                   <button
                     key={agent.id}
                     onClick={() => toggleAgent(agent.id)}
-                    className={clsx(
-                      'w-6 h-6 font-pixel text-[8px] leading-none border-2 transition-all duration-75 flex items-center justify-center',
-                      active
-                        ? 'border-current text-white'
-                        : 'border-slate-600 text-slate-500 hover:border-slate-400 hover:text-slate-300'
-                    )}
-                    style={active ? { borderColor: agent.primaryColor, color: agent.primaryColor, backgroundColor: agent.primaryColor + '22' } : {}}
+                    className="w-6 h-6 font-pixel text-[8px] leading-none flex items-center justify-center transition-all duration-75"
+                    style={{
+                      border: `2px solid ${active ? agent.primaryColor : 'var(--color-border)'}`,
+                      color: active ? agent.primaryColor : 'var(--color-text-muted)',
+                      backgroundColor: active ? `${agent.primaryColor}22` : 'transparent',
+                    }}
                     title={agent.name}
                   >
                     {agent.name[0]}
@@ -109,7 +116,7 @@ export default function ActivityFilter() {
 
           {/* Type toggles */}
           <div>
-            <div className="font-pixel text-[6px] text-slate-500 mb-1 tracking-wide">TYPES</div>
+            <div className="font-pixel text-[6px] mb-1 tracking-wide" style={{ color: 'var(--color-text-muted)' }}>TYPES</div>
             <div className="flex flex-wrap gap-1">
               {ALL_TYPES.map((type) => {
                 const active = filter.types.includes(type);
@@ -117,12 +124,12 @@ export default function ActivityFilter() {
                   <button
                     key={type}
                     onClick={() => toggleType(type)}
-                    className={clsx(
-                      'flex items-center gap-0.5 px-1.5 py-0.5 font-pixel text-[6px] border-2 transition-all duration-75',
-                      active
-                        ? 'bg-violet-700/60 border-violet-500 text-violet-200'
-                        : 'bg-slate-700/40 border-slate-600 text-slate-400 hover:border-slate-400 hover:text-slate-300'
-                    )}
+                    className="flex items-center gap-0.5 px-1.5 py-0.5 font-pixel text-[6px] transition-all duration-75"
+                    style={{
+                      border: `2px solid ${active ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      backgroundColor: active ? 'rgba(90,140,255,0.15)' : 'transparent',
+                      color: active ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                    }}
                     title={ACTIVITY_LABELS[type]}
                   >
                     <span className="text-[8px] leading-none">{ACTIVITY_ICONS[type]}</span>
@@ -133,11 +140,13 @@ export default function ActivityFilter() {
             </div>
           </div>
 
-          {/* Clear button */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="self-start font-pixel text-[6px] text-red-400 hover:text-red-300 border-2 border-red-800 hover:border-red-600 px-2 py-0.5 transition-colors"
+              className="self-start font-pixel text-[6px] px-2 py-0.5 transition-colors"
+              style={{ color: '#ef4444', border: '2px solid #7f1d1d' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ef4444'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#7f1d1d'; }}
             >
               CLEAR ALL
             </button>

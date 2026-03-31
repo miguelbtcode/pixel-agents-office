@@ -7,19 +7,23 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        pixel: ['var(--font-pixel)', 'monospace'],
+        pixel: ['PixelFont', 'Courier New', 'monospace'],
       },
       colors: {
         bg: 'var(--color-bg)',
         surface: 'var(--color-surface)',
         'surface-2': 'var(--color-surface-2)',
         accent: 'var(--color-accent)',
+        'accent-green': 'var(--color-accent-green)',
         'text-base': 'var(--color-text)',
         'text-muted': 'var(--color-text-muted)',
+        border: 'var(--color-border)',
+        'border-light': 'var(--color-border-light)',
+        'pixel-shadow': 'var(--pixel-shadow)',
       },
       keyframes: {
         'entry-flash': {
-          '0%': { backgroundColor: 'rgba(139, 92, 246, 0.35)' },
+          '0%': { backgroundColor: 'rgba(90, 140, 255, 0.3)' },
           '100%': { backgroundColor: 'transparent' },
         },
         'slide-up': {

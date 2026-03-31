@@ -15,17 +15,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', className, children, ...props }, ref) => {
     const base =
-      'relative inline-flex items-center justify-center font-pixel leading-none transition-all duration-75 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0';
+      'relative inline-flex items-center justify-center font-pixel leading-none transition-all duration-75 active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0';
 
     const variants: Record<ButtonVariant, string> = {
       primary:
-        'bg-violet-600 text-white hover:bg-violet-500 shadow-[3px_3px_0px_#4c1d95] active:shadow-[1px_1px_0px_#4c1d95] border-2 border-violet-800',
+        'text-white shadow-[2px_2px_0px_#0a0a14] active:shadow-[1px_1px_0px_#0a0a14]',
       secondary:
-        'bg-slate-700 text-slate-100 hover:bg-slate-600 shadow-[3px_3px_0px_#0f172a] active:shadow-[1px_1px_0px_#0f172a] border-2 border-slate-900',
+        'text-[var(--color-text)] shadow-[2px_2px_0px_#0a0a14] active:shadow-[1px_1px_0px_#0a0a14]',
       ghost:
-        'bg-transparent text-slate-300 hover:text-white border-2 border-slate-600 hover:border-slate-400 shadow-none',
+        'bg-transparent text-[var(--color-text-muted)] shadow-none',
       danger:
-        'bg-red-700 text-white hover:bg-red-600 shadow-[3px_3px_0px_#7f1d1d] active:shadow-[1px_1px_0px_#7f1d1d] border-2 border-red-900',
+        'bg-[#7f1d1d] text-white shadow-[2px_2px_0px_#0a0a14] active:shadow-[1px_1px_0px_#0a0a14] border-2 border-[#991b1b]',
     };
 
     const sizes: Record<ButtonSize, string> = {
@@ -34,16 +34,33 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'text-[10px] px-4 py-3',
     };
 
+    // Inline styles for CSS variable colors
+    const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
+      primary: {
+        backgroundColor: 'var(--color-accent)',
+        border: '2px solid #4a6cdf',
+      },
+      secondary: {
+        backgroundColor: 'var(--color-surface-2)',
+        border: '2px solid var(--color-border)',
+      },
+      ghost: {
+        border: '2px solid var(--color-border)',
+      },
+      danger: {},
+    };
+
     return (
       <button
         ref={ref}
         className={twMerge(clsx(base, variants[variant], sizes[size], className))}
+        style={variantStyles[variant]}
         {...props}
       >
         {children}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';
