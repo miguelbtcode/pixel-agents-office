@@ -12,6 +12,8 @@ import { SpriteSheet, AGENT_ANIMATIONS } from '@/engine/SpriteSheet';
 import { mapLayout } from '@/data/mapLayout';
 import { Scheduler } from '@/simulation/Scheduler';
 import { getFurnitureById } from '@/data/furnitureCatalog';
+import { preloadAllSprites, registerAgentAppearances } from '@/engine/CharacterSprites';
+import { agentProfiles } from '@/data/agentProfiles';
 import MiniMap from '@/components/office/MiniMap';
 import AgentEditor from '@/components/agents/AgentEditor';
 import type { AgentId } from '@/types/agent';
@@ -93,7 +95,17 @@ export default function OfficeCanvas() {
 
     let cleanup: (() => void) | undefined;
 
+    let cancelled = false;
+
+    // Async init to support sprite preloading
+    const init = async () => {
     try {
+    // ── Preload PNG sprite sheets ──────────────────────────────
+    registerAgentAppearances(agentProfiles);
+    await preloadAllSprites();
+
+    if (cancelled) return;
+
     // ── Initialize core engine objects ──────────────────────────
     const tileMap = new TileMap(mapLayout);
     tileMapRef.current = tileMap;
@@ -350,8 +362,14 @@ export default function OfficeCanvas() {
       // Always dismiss loading screen so user sees something
       setIsLoading(false);
     }
+    }; // end async init
 
-    return () => cleanup?.();
+    init();
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

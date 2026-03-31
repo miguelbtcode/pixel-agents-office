@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AgentAppearance, AgentDirection } from '@/types/agent';
 import { getCharacterSprites, type SpriteData } from '@/engine/CharacterSprites';
 
@@ -18,18 +18,21 @@ interface AgentSpriteProps {
 function drawSpriteToCanvas(
   ctx: CanvasRenderingContext2D,
   sprite: SpriteData,
-  canvasSize: number,
+  canvasW: number,
+  canvasH: number,
 ): void {
-  ctx.clearRect(0, 0, canvasSize, canvasSize);
+  ctx.clearRect(0, 0, canvasW, canvasH);
 
   const rows = sprite.length;
   const cols = rows > 0 ? sprite[0].length : 0;
   if (rows === 0 || cols === 0) return;
 
-  // Scale to fit the canvas with padding
-  const pixelSize = Math.floor(canvasSize / Math.max(rows, cols));
-  const offsetX = Math.floor((canvasSize - cols * pixelSize) / 2);
-  const offsetY = Math.floor((canvasSize - rows * pixelSize) / 2);
+  // Scale to fit canvas while maintaining aspect ratio
+  const scaleX = canvasW / cols;
+  const scaleY = canvasH / rows;
+  const pixelSize = Math.floor(Math.min(scaleX, scaleY));
+  const offsetX = Math.floor((canvasW - cols * pixelSize) / 2);
+  const offsetY = Math.floor((canvasH - rows * pixelSize) / 2);
 
   ctx.imageSmoothingEnabled = false;
 
@@ -53,6 +56,7 @@ export default function AgentSprite({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -77,7 +81,8 @@ export default function AgentSprite({
         }
 
         const sprite = sprites.walk[direction][frameRef.current];
-        drawSpriteToCanvas(ctx, sprite, size);
+        // Canvas height is 2x width to match 16:32 aspect ratio
+        drawSpriteToCanvas(ctx, sprite, size, size * 2);
         rafRef.current = requestAnimationFrame(tick);
       };
 
@@ -89,19 +94,23 @@ export default function AgentSprite({
     } else {
       // Static idle frame
       const sprite = sprites.idle[direction];
-      drawSpriteToCanvas(ctx, sprite, size);
+      drawSpriteToCanvas(ctx, sprite, size, size * 2);
     }
   }, [appearance, direction, size, animated]);
+
+  // Canvas aspect ratio: 16:32 = 1:2
+  const canvasW = size;
+  const canvasH = size * 2;
 
   return (
     <canvas
       ref={canvasRef}
-      width={size}
-      height={size}
+      width={canvasW}
+      height={canvasH}
       style={{
         imageRendering: 'pixelated',
-        width: size,
-        height: size,
+        width: canvasW,
+        height: canvasH,
       }}
     />
   );

@@ -346,7 +346,8 @@ class Renderer {
 
     const { px, py } = agent.position;
     const centerX = px + TILE_SIZE / 2;
-    const bubbleBaseY = py - 10;
+    // Sprite is 32px tall, anchored at tile bottom, so top of sprite is py + TILE_SIZE - 32
+    const bubbleBaseY = py + TILE_SIZE - 32 - 2;
 
     const fontSize = 5;
     this.ctx.font = `bold ${fontSize}px monospace`;
