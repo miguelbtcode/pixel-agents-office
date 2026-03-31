@@ -20,7 +20,7 @@ const TILE_BORDER_COLORS: Record<number, string> = {
 
 class Renderer {
   private canvas: HTMLCanvasElement;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  // ctx uses definite assignment (!) - always set before use via _hasContext guard
   private ctx!: CanvasRenderingContext2D;
   private _hasContext = false;
   private tileMap: TileMap;

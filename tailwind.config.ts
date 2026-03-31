@@ -7,7 +7,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        pixel: ['Press Start 2P', 'monospace'],
+        pixel: ['var(--font-pixel)', 'monospace'],
       },
       colors: {
         bg: 'var(--color-bg)',

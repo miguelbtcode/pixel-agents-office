@@ -1,5 +1,13 @@
 import type { Metadata } from 'next';
+import { Press_Start_2P } from 'next/font/google';
 import './globals.css';
+
+const pressStart2P = Press_Start_2P({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-pixel',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Pixel Agents Office',
@@ -29,15 +37,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={pressStart2P.variable}>
       <head>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
-          rel="stylesheet"
         />
       </head>
       <body className="bg-bg text-text-base antialiased">{children}</body>
