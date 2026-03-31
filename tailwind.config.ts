@@ -7,7 +7,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        pixel: ['Press Start 2P', 'monospace'],
+        pixel: ['var(--font-pixel)', 'monospace'],
       },
       colors: {
         bg: 'var(--color-bg)',
@@ -16,6 +16,20 @@ const config: Config = {
         accent: 'var(--color-accent)',
         'text-base': 'var(--color-text)',
         'text-muted': 'var(--color-text-muted)',
+      },
+      keyframes: {
+        'entry-flash': {
+          '0%': { backgroundColor: 'rgba(139, 92, 246, 0.35)' },
+          '100%': { backgroundColor: 'transparent' },
+        },
+        'slide-up': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'entry-flash': 'entry-flash 3s ease-out forwards',
+        'slide-up': 'slide-up 0.3s ease-out forwards',
       },
     },
   },
