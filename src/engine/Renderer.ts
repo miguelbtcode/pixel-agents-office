@@ -28,6 +28,9 @@ class Renderer {
   cameraY: number;
   zoom: number;
 
+  // Animation time in seconds (updated each frame via setTime)
+  private time: number;
+
   constructor(canvas: HTMLCanvasElement, tileMap: TileMap) {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -39,6 +42,12 @@ class Renderer {
     this.cameraX = 0;
     this.cameraY = 0;
     this.zoom = 1;
+    this.time = 0;
+  }
+
+  /** Update the current animation time (seconds). Called from the game loop. */
+  setTime(t: number): void {
+    this.time = t;
   }
 
   // ─────────────────────────────────────────────
