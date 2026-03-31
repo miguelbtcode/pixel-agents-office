@@ -65,10 +65,10 @@ export default function MiniMap({
     if (!ctx) return;
 
     // ── Background ─────────────────────────────────────────────────
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fillRect(0, 0, MINI_W, MINI_H);
 
-    // ── Draw rooms ────────────────────────────────────────────────
+    // ── Draw rooms as colored blocks ──────────────────────────────
     for (const room of rooms) {
       const rx = room.bounds.x * SCALE_X;
       const ry = room.bounds.y * SCALE_Y;
@@ -79,12 +79,15 @@ export default function MiniMap({
     }
 
     // ── Draw wall border (entire map edge) ─────────────────────────
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(0.75, 0.75, MINI_W - 1.5, MINI_H - 1.5);
+    ctx.fillStyle = '#374151';
+    // Top/bottom border rows
+    ctx.fillRect(0, 0, MINI_W, SCALE_Y);
+    ctx.fillRect(0, (MAP_HEIGHT - 1) * SCALE_Y, MINI_W, SCALE_Y);
+    // Left/right border cols
+    ctx.fillRect(0, 0, SCALE_X, MINI_H);
+    ctx.fillRect((MAP_WIDTH - 1) * SCALE_X, 0, SCALE_X, MINI_H);
 
-    // ── Draw dividing walls (row 14 and room separator columns) ────
-    // horizontal divider at tile y=14
+    // ── Draw horizontal divider wall at tile y=14 ──────────────────
     const divY = 14 * SCALE_Y;
     ctx.fillStyle = '#374151';
     ctx.fillRect(0, divY, MINI_W, SCALE_Y);
@@ -125,10 +128,11 @@ export default function MiniMap({
     ctx.lineWidth = 1;
     ctx.strokeRect(vpX, vpY, vpW, vpH);
 
-    // ── Draw agent dots ────────────────────────────────────────────
+    // ── Draw agent dots (3px radius) ───────────────────────────────
     for (const agent of Object.values(agents)) {
-      const dotX = (agent.position.px / TILE_SIZE) * SCALE_X;
-      const dotY = (agent.position.py / TILE_SIZE) * SCALE_Y;
+      // agent.position.px/py are world pixel coords
+      const dotX = (agent.position.px / TILE_SIZE + 0.5) * SCALE_X;
+      const dotY = (agent.position.py / TILE_SIZE + 0.5) * SCALE_Y;
 
       // Outer shadow ring
       ctx.beginPath();
@@ -143,7 +147,7 @@ export default function MiniMap({
       ctx.fill();
     }
 
-    // ── "MAP" label ────────────────────────────────────────────────
+    // ── "MAP" label (pixel font feel) ─────────────────────────────
     ctx.font = 'bold 7px monospace';
     ctx.fillStyle = 'rgba(148,163,184,0.85)';
     ctx.textBaseline = 'top';
@@ -154,10 +158,10 @@ export default function MiniMap({
     if (!onClickMiniMap) return;
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     // Scale from display size to canvas resolution
-    const scaleX = MINI_W / rect.width;
-    const scaleY = MINI_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+    const displayScaleX = MINI_W / rect.width;
+    const displayScaleY = MINI_H / rect.height;
+    const mx = (e.clientX - rect.left) * displayScaleX;
+    const my = (e.clientY - rect.top) * displayScaleY;
 
     // Convert mini-map pixel -> tile coords -> world pixel
     const tileX = mx / SCALE_X;
@@ -166,19 +170,23 @@ export default function MiniMap({
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={MINI_W}
-      height={MINI_H}
-      onClick={handleClick}
-      className="cursor-crosshair"
-      style={{
-        border: '2px solid #475569',
-        imageRendering: 'pixelated',
-        display: 'block',
-        background: 'rgba(0,0,0,0.7)',
-      }}
-      aria-label="Mini map — click to pan"
-    />
+    <div
+      className="absolute bottom-3 left-3 z-10"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+    >
+      <canvas
+        ref={canvasRef}
+        width={MINI_W}
+        height={MINI_H}
+        onClick={handleClick}
+        className={onClickMiniMap ? 'cursor-crosshair' : ''}
+        style={{
+          border: '2px solid #475569',
+          imageRendering: 'pixelated',
+          display: 'block',
+        }}
+        aria-label="Mini map — click to pan"
+      />
+    </div>
   );
 }

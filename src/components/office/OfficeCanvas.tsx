@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAgentStore } from '@/store/useAgentStore';
 import { useOfficeStore } from '@/store/useOfficeStore';
 import { GameLoop } from '@/engine/GameLoop';
@@ -10,11 +10,16 @@ import { Pathfinder } from '@/engine/Pathfinder';
 import { SpriteSheet, AGENT_ANIMATIONS } from '@/engine/SpriteSheet';
 import { mapLayout } from '@/data/mapLayout';
 import { Scheduler } from '@/simulation/Scheduler';
+import MiniMap from '@/components/office/MiniMap';
+import AgentEditor from '@/components/agents/AgentEditor';
 import type { AgentId } from '@/types/agent';
 
 // Movement speed: tiles per second
 const TILES_PER_SECOND = 3;
 const PIXELS_PER_MS = (TILES_PER_SECOND * TILE_SIZE) / 1000;
+
+// How many pixels of drag before we consider it a drag (not a click)
+const DRAG_THRESHOLD = 5;
 
 export default function OfficeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +28,16 @@ export default function OfficeCanvas() {
   const tileMapRef = useRef<TileMap | null>(null);
   const schedulerRef = useRef<Scheduler | null>(null);
 
+  // Loading state: true until engine is initialized
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Selected agent for editor modal
+  const [selectedAgentId, setSelectedAgentId] = useState<AgentId | null>(null);
+
+  // Camera state mirrored into React for MiniMap re-renders
+  const [cameraState, setCameraState] = useState({ cameraX: 0, cameraY: 0, zoom: 1.5 });
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
   // Per-agent SpriteSheet instances keyed by AgentId
   const spriteSheets = useRef<Record<string, SpriteSheet>>({});
 
@@ -30,11 +45,17 @@ export default function OfficeCanvas() {
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const cameraAtDragStart = useRef({ x: 0, y: 0 });
+  // Track how far we've dragged to distinguish click vs drag
+  const dragDistance = useRef(0);
 
   // Snapshots of store state used inside the game loop callbacks
   // (captured via refs to avoid stale closures)
   const agentsRef = useRef(useAgentStore.getState().agents);
   const furnitureRef = useRef(useOfficeStore.getState().furniture);
+
+  // Sync agents to React state for MiniMap (throttled via rAF tick)
+  const agentsForMiniMap = useAgentStore((state) => state.agents);
+  const rooms = useOfficeStore((state) => state.rooms);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -174,9 +195,13 @@ export default function OfficeCanvas() {
     });
 
     // ── Render function ──────────────────────────────────────────
+    let frameCount = 0;
     gameLoop.setRender(() => {
       const r = rendererRef.current;
       if (!r) return;
+
+      // Update renderer time for animations
+      r.setTime(performance.now() / 1000);
 
       const agents = agentsRef.current;
       const furniture = furnitureRef.current;
@@ -213,6 +238,12 @@ export default function OfficeCanvas() {
         if (!agent) continue;
         r.drawAgentNameTag(agent);
       }
+
+      // Sync camera state to React every ~10 frames (for MiniMap)
+      frameCount++;
+      if (frameCount % 10 === 0) {
+        setCameraState({ cameraX: r.cameraX, cameraY: r.cameraY, zoom: r.zoom });
+      }
     });
 
     // ── Handle resize ────────────────────────────────────────────
@@ -221,6 +252,7 @@ export default function OfficeCanvas() {
       if (!r || !canvas.parentElement) return;
       const { clientWidth, clientHeight } = canvas.parentElement;
       r.resize(clientWidth, clientHeight);
+      setCanvasSize({ width: clientWidth, height: clientHeight });
     };
 
     handleResize();
@@ -231,6 +263,9 @@ export default function OfficeCanvas() {
     }
 
     gameLoop.start();
+
+    // Mark as loaded after first frame
+    setIsLoading(false);
 
     return () => {
       gameLoop.stop();
@@ -248,6 +283,7 @@ export default function OfficeCanvas() {
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     isDragging.current = true;
+    dragDistance.current = 0;
     dragStart.current = { x: e.clientX, y: e.clientY };
     const r = rendererRef.current;
     if (r) {
@@ -261,13 +297,41 @@ export default function OfficeCanvas() {
     if (!r) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
+    dragDistance.current = Math.sqrt(dx * dx + dy * dy);
     r.cameraX = cameraAtDragStart.current.x - dx / r.zoom;
     r.cameraY = cameraAtDragStart.current.y - dy / r.zoom;
   }, []);
 
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-  }, []);
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const wasDrag = dragDistance.current > DRAG_THRESHOLD;
+      isDragging.current = false;
+      dragDistance.current = 0;
+
+      if (!wasDrag) {
+        // Treat as a click — check for agent hit
+        const r = rendererRef.current;
+        if (!r) return;
+
+        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+        const screenX = e.clientX - rect.left;
+        const screenY = e.clientY - rect.top;
+        const tile = r.screenToTile(screenX, screenY);
+
+        const agents = agentsRef.current;
+        const agentIds: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
+        for (const id of agentIds) {
+          const agent = agents[id];
+          if (!agent) continue;
+          if (agent.position.x === tile.x && agent.position.y === tile.y) {
+            setSelectedAgentId(id);
+            break;
+          }
+        }
+      }
+    },
+    []
+  );
 
   const handleMouseLeave = useCallback(() => {
     isDragging.current = false;
@@ -313,19 +377,68 @@ export default function OfficeCanvas() {
     touchStart.current = null;
   }, []);
 
+  // ── MiniMap click → pan camera ─────────────────────────────────
+
+  const handleMiniMapClick = useCallback((worldX: number, worldY: number) => {
+    const r = rendererRef.current;
+    if (!r) return;
+    // Center camera on the clicked world position
+    r.cameraX = worldX - canvasSize.width / 2 / r.zoom;
+    r.cameraY = worldY - canvasSize.height / 2 / r.zoom;
+    setCameraState({ cameraX: r.cameraX, cameraY: r.cameraY, zoom: r.zoom });
+  }, [canvasSize]);
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full cursor-grab active:cursor-grabbing"
-      style={{ imageRendering: 'pixelated' }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    />
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900">
+          <div className="font-pixel text-[10px] text-violet-300 tracking-widest mb-4">
+            PIXEL AGENTS OFFICE
+          </div>
+          <div className="font-pixel text-[8px] text-slate-400 tracking-widest animate-pulse">
+            LOADING...
+          </div>
+        </div>
+      )}
+
+      {/* Main canvas */}
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+        style={{ imageRendering: 'pixelated' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      />
+
+      {/* MiniMap overlay — bottom-left */}
+      {!isLoading && (
+        <MiniMap
+          rooms={rooms}
+          agents={agentsForMiniMap}
+          cameraX={cameraState.cameraX}
+          cameraY={cameraState.cameraY}
+          zoom={cameraState.zoom}
+          canvasWidth={canvasSize.width}
+          canvasHeight={canvasSize.height}
+          onClickMiniMap={handleMiniMapClick}
+        />
+      )}
+
+      {/* Agent editor modal */}
+      {selectedAgentId && (
+        <AgentEditor
+          agentId={selectedAgentId}
+          isOpen={true}
+          onClose={() => setSelectedAgentId(null)}
+        />
+      )}
+    </div>
   );
 }

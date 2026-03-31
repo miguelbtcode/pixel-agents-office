@@ -164,6 +164,14 @@ class Renderer {
         }
         break;
       }
+      case 1: {
+        // Floor: subtle scanline effect — every 4th pixel row slightly darker (static)
+        this.ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        for (let row = 0; row < s; row += 4) {
+          this.ctx.fillRect(px, py + row, s, 1);
+        }
+        break;
+      }
       case 4: {
         // Door: frame + panel inset
         this.ctx.fillStyle = '#6d28d9';
@@ -251,6 +259,29 @@ class Renderer {
       // Display
       this.ctx.fillStyle = '#065f46';
       this.ctx.fillRect(px + 3, py + 4, pw - 6, 8);
+      // Animated steam puffs (3 circles oscillating using this.time)
+      const steamCenterX = px + pw / 2;
+      const steamBaseY = py + 2;
+      const steamAlpha = 0.25 + 0.15 * Math.abs(Math.sin(this.time * 1.8));
+      this.ctx.fillStyle = `rgba(200,220,240,${steamAlpha})`;
+      // Puff 1 — offset with sin phase 0
+      const p1x = steamCenterX - 3 + 2 * Math.sin(this.time * 2.0);
+      const p1y = steamBaseY - 4 * Math.abs(Math.sin(this.time * 1.5));
+      this.ctx.beginPath();
+      this.ctx.arc(p1x, p1y, 2, 0, Math.PI * 2);
+      this.ctx.fill();
+      // Puff 2 — offset with sin phase π/2
+      const p2x = steamCenterX + 1 + 2 * Math.sin(this.time * 2.0 + 1.0);
+      const p2y = steamBaseY - 4 * Math.abs(Math.sin(this.time * 1.5 + 1.0)) - 2;
+      this.ctx.beginPath();
+      this.ctx.arc(p2x, p2y, 1.5, 0, Math.PI * 2);
+      this.ctx.fill();
+      // Puff 3 — offset with sin phase π
+      const p3x = steamCenterX - 1 + 2 * Math.sin(this.time * 2.0 + 2.0);
+      const p3y = steamBaseY - 4 * Math.abs(Math.sin(this.time * 1.5 + 2.0)) - 5;
+      this.ctx.beginPath();
+      this.ctx.arc(p3x, p3y, 1, 0, Math.PI * 2);
+      this.ctx.fill();
     } else if (cat === 'vending_machine') {
       // Vending machine: rows of items
       this.ctx.fillStyle = '#1e3a8a';
@@ -370,6 +401,19 @@ class Renderer {
     // Accessories
     for (const acc of agent.appearance.accessories) {
       this.drawAccessory(acc, drawX, drawY, outfitColor);
+    }
+
+    // Working state: blinking cursor/light on the desk in front of the agent
+    if (agent.state === 'working') {
+      const blinkOn = Math.sin(this.time * 4.0) > 0;
+      if (blinkOn) {
+        // Small green cursor square drawn just below the agent (at desk position)
+        this.ctx.fillStyle = '#22c55e';
+        this.ctx.fillRect(drawX + 6, drawY + 30, 2, 4);
+        // Faint screen glow on the desk below
+        this.ctx.fillStyle = 'rgba(34,197,94,0.18)';
+        this.ctx.fillRect(drawX - 2, drawY + 28, 20, 6);
+      }
     }
 
     this.ctx.restore();
