@@ -17,6 +17,15 @@ const config: Config = {
         'text-base': 'var(--color-text)',
         'text-muted': 'var(--color-text-muted)',
       },
+      keyframes: {
+        'entry-flash': {
+          '0%': { backgroundColor: 'rgba(139, 92, 246, 0.35)' },
+          '100%': { backgroundColor: 'transparent' },
+        },
+      },
+      animation: {
+        'entry-flash': 'entry-flash 3s ease-out forwards',
+      },
     },
   },
   plugins: [],
