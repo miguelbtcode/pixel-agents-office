@@ -504,12 +504,31 @@ export default function OfficeCanvas() {
 
   // ── Touch support ──────────────────────────────────────────────
 
+  // Single-finger pan state
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const cameraAtTouchStart = useRef({ x: 0, y: 0 });
+  // Track touch start position to detect tap vs drag
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  // Pinch-to-zoom state
+  const lastPinchDistance = useRef<number | null>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 1) {
-      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (e.touches.length === 2) {
+      // Begin pinch gesture — record initial distance
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lastPinchDistance.current = dist;
+      // Cancel any single-finger pan
+      touchStart.current = null;
+      touchStartPos.current = null;
+    } else if (e.touches.length === 1) {
+      const pos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      touchStart.current = pos;
+      touchStartPos.current = pos;
+      lastPinchDistance.current = null;
       const r = rendererRef.current;
       if (r) {
         cameraAtTouchStart.current = { x: r.cameraX, y: r.cameraY };
@@ -519,18 +538,76 @@ export default function OfficeCanvas() {
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!touchStart.current || e.touches.length !== 1) return;
     const r = rendererRef.current;
     if (!r) return;
-    const dx = e.touches[0].clientX - touchStart.current.x;
-    const dy = e.touches[0].clientY - touchStart.current.y;
-    r.cameraX = cameraAtTouchStart.current.x - dx / r.zoom;
-    r.cameraY = cameraAtTouchStart.current.y - dy / r.zoom;
+
+    if (e.touches.length === 2) {
+      // Pinch-to-zoom
+      const newDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastPinchDistance.current !== null) {
+        const delta = newDist - lastPinchDistance.current;
+        r.zoom = Math.max(0.5, Math.min(3, r.zoom + delta * 0.01));
+      }
+      lastPinchDistance.current = newDist;
+    } else if (e.touches.length === 1 && touchStart.current) {
+      // Single-finger pan
+      const dx = e.touches[0].clientX - touchStart.current.x;
+      const dy = e.touches[0].clientY - touchStart.current.y;
+      r.cameraX = cameraAtTouchStart.current.x - dx / r.zoom;
+      r.cameraY = cameraAtTouchStart.current.y - dy / r.zoom;
+    }
   }, []);
 
-  const handleTouchEnd = useCallback(() => {
-    touchStart.current = null;
-  }, []);
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      // If the touch ended and we still have a recorded start position,
+      // check if it was a tap (minimal movement) to select an agent
+      if (touchStartPos.current && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - touchStartPos.current.x;
+        const dy = touch.clientY - touchStartPos.current.y;
+        const moved = Math.sqrt(dx * dx + dy * dy);
+
+        if (moved <= DRAG_THRESHOLD) {
+          // Treat as a tap
+          const r = rendererRef.current;
+          if (r) {
+            const canvas = canvasRef.current;
+            if (canvas) {
+              const rect = canvas.getBoundingClientRect();
+              const screenX = touch.clientX - rect.left;
+              const screenY = touch.clientY - rect.top;
+              const tile = r.screenToTile(screenX, screenY);
+
+              const isEditorMode = useOfficeStore.getState().isEditorMode;
+              if (!isEditorMode) {
+                const agents = agentsRef.current;
+                const ids: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
+                for (const id of ids) {
+                  const agent = agents[id];
+                  if (!agent) continue;
+                  if (agent.position.x === tile.x && agent.position.y === tile.y) {
+                    setSelectedAgentId(id);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      touchStart.current = null;
+      touchStartPos.current = null;
+      if (e.touches.length < 2) {
+        lastPinchDistance.current = null;
+      }
+    },
+    []
+  );
 
   // ── MiniMap click → pan camera ─────────────────────────────────
 
@@ -552,7 +629,7 @@ export default function OfficeCanvas() {
       : 'cursor-grab active:cursor-grabbing';
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden no-select">
       {/* Loading overlay */}
       {isLoading && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900">
