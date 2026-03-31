@@ -6,8 +6,10 @@ import { useOfficeStore } from '@/store/useOfficeStore';
 import { GameLoop } from '@/engine/GameLoop';
 import { Renderer, TILE_SIZE } from '@/engine/Renderer';
 import { TileMap } from '@/engine/TileMap';
+import { Pathfinder } from '@/engine/Pathfinder';
 import { SpriteSheet, AGENT_ANIMATIONS } from '@/engine/SpriteSheet';
 import { mapLayout } from '@/data/mapLayout';
+import { Scheduler } from '@/simulation/Scheduler';
 import type { AgentId } from '@/types/agent';
 
 // Movement speed: tiles per second
@@ -19,6 +21,7 @@ export default function OfficeCanvas() {
   const rendererRef = useRef<Renderer | null>(null);
   const gameLoopRef = useRef<GameLoop | null>(null);
   const tileMapRef = useRef<TileMap | null>(null);
+  const schedulerRef = useRef<Scheduler | null>(null);
 
   // Per-agent SpriteSheet instances keyed by AgentId
   const spriteSheets = useRef<Record<string, SpriteSheet>>({});
@@ -41,6 +44,8 @@ export default function OfficeCanvas() {
     const tileMap = new TileMap(mapLayout);
     tileMapRef.current = tileMap;
 
+    const pathfinder = new Pathfinder(tileMap);
+
     const renderer = new Renderer(canvas, tileMap);
     rendererRef.current = renderer;
 
@@ -58,6 +63,11 @@ export default function OfficeCanvas() {
     const gameLoop = new GameLoop();
     gameLoopRef.current = gameLoop;
 
+    // ── Create and start the Scheduler ──────────────────────────
+    const scheduler = new Scheduler(tileMap, pathfinder);
+    schedulerRef.current = scheduler;
+    scheduler.start();
+
     // ── Subscribe to store changes and keep refs current ────────
     const unsubAgents = useAgentStore.subscribe((state) => {
       agentsRef.current = state.agents;
@@ -66,8 +76,22 @@ export default function OfficeCanvas() {
       furnitureRef.current = state.furniture;
     });
 
+    // ── Pause scheduler when editor mode is active ───────────────
+    const unsubEditor = useOfficeStore.subscribe((state) => {
+      if (schedulerRef.current) {
+        if (state.isEditorMode) {
+          schedulerRef.current.pause();
+        } else {
+          schedulerRef.current.resume();
+        }
+      }
+    });
+
     // ── Update function ──────────────────────────────────────────
     gameLoop.setUpdate((dt: number) => {
+      // Advance simulation
+      schedulerRef.current?.update(dt);
+
       const setAgentPosition = useAgentStore.getState().setAgentPosition;
       const setAgentState = useAgentStore.getState().setAgentState;
       const setAgentDirection = useAgentStore.getState().setAgentDirection;
@@ -210,9 +234,12 @@ export default function OfficeCanvas() {
 
     return () => {
       gameLoop.stop();
+      scheduler.stop();
+      schedulerRef.current = null;
       resizeObserver.disconnect();
       unsubAgents();
       unsubFurniture();
+      unsubEditor();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
