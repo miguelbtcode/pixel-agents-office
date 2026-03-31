@@ -79,11 +79,11 @@ const ALL_AGENT_IDS: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
 
 // Spread positions around the meeting table so agents don't all pile up on one tile
 const MEETING_POSITIONS: AgentPosition[] = [
-  { x: 4, y: 20, px: 4 * 32, py: 20 * 32 },
-  { x: 6, y: 20, px: 6 * 32, py: 20 * 32 },
-  { x: 8, y: 20, px: 8 * 32, py: 20 * 32 },
-  { x: 4, y: 23, px: 4 * 32, py: 23 * 32 },
-  { x: 8, y: 23, px: 8 * 32, py: 23 * 32 },
+  { x: 4, y: 20, px: 4 * 16, py: 20 * 16 },
+  { x: 6, y: 20, px: 6 * 16, py: 20 * 16 },
+  { x: 8, y: 20, px: 8 * 16, py: 20 * 16 },
+  { x: 4, y: 23, px: 4 * 16, py: 23 * 16 },
+  { x: 8, y: 23, px: 8 * 16, py: 23 * 16 },
 ];
 
 export class InteractionManager {

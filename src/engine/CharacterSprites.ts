@@ -1,13 +1,14 @@
 /**
  * Pixel-art character sprite system.
  *
- * Each sprite is a SpriteData = string[][] (rows x cols of hex color strings).
- * Empty string '' means transparent pixel.
- * Characters are 16 wide x 24 tall pixels (matching Gather/pixel-agents style).
+ * Each sprite is SpriteData = string[][] (rows x cols of hex color strings).
+ * Empty string '' = transparent pixel.
+ * Characters are 16 wide x 24 tall (matching pixel-agents / Gather style).
  *
- * Palette tokens used in templates:
- *   H = hair, S = skin, E = eye color, O = outfit, D = outfit dark (legs/shadow),
- *   B = outline/black, W = white, T = transparent, X = shoe color
+ * Palette tokens:
+ *   H = hair, h = hair dark, S = skin, s = skin shadow,
+ *   E = eye, M = mouth, O = outfit, o = outfit dark, D = leg/dark outfit,
+ *   X = shoe, B = outline, W = white eye, . = transparent
  */
 
 import type { AgentAppearance, AgentDirection } from '@/types/agent';
@@ -31,270 +32,259 @@ function darken(hex: string, amount: number): string {
   );
 }
 
-function lighten(hex: string, amount: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (
-    '#' +
-    Math.min(255, Math.floor(r + (255 - r) * amount)).toString(16).padStart(2, '0') +
-    Math.min(255, Math.floor(g + (255 - g) * amount)).toString(16).padStart(2, '0') +
-    Math.min(255, Math.floor(b + (255 - b) * amount)).toString(16).padStart(2, '0')
-  );
-}
-
 // ════════════════════════════════════════════════════════════════
-// Sprite Templates (16x24, token-based)
+// Sprite templates — each row is EXACTLY 16 characters
 // ════════════════════════════════════════════════════════════════
-// T=transparent, B=outline, H=hair, h=hair dark, S=skin, s=skin shadow,
-// E=eye, M=mouth, O=outfit, o=outfit shadow, D=outfit dark, W=white, X=shoe
 
-// ── DOWN (front-facing) ────────────────────────────────────────
+/* ── DOWN (front-facing) idle ─────────────────────────────── */
+const T_DOWN_IDLE: string[] = [
+  '....BBBBBB......', // row 0  - hair top outline
+  '...BHHHHHHBh....', // row 1  - hair
+  '..BHHHHHHHHhB...', // row 2  - hair sides
+  '..BHHhHHHHhHB...', // row 3  - hair detail
+  '..BSSSSSSSSSB...', // row 4  - forehead
+  '..BSWESSWSEsB...', // row 5  - eyes (W=white, E=pupil)
+  '..BSSSSsSSSsB...', // row 6  - nose area
+  '...BSSSMMSSsB...', // row 7  - mouth
+  '...BSSSSSSSB....', // row 8  - chin
+  '....BOOOOB......', // row 9  - collar
+  '...BOOOOOOOB....', // row 10 - shoulders
+  '..BOoOOOOOoOB...', // row 11 - torso + arm shadow
+  '..BOoOOOOOoOB...', // row 12 - torso
+  '..BOoOOOOOoOB...', // row 13 - torso
+  '...BOOOOOOOB....', // row 14 - waist
+  '...BODDDDOOB....', // row 15 - belt
+  '....BDDDDDB.....', // row 16 - upper legs
+  '....BDD..DDB....', // row 17 - legs apart
+  '....BDD..DDB....', // row 18 - legs
+  '....BDD..DDB....', // row 19 - lower legs
+  '...BXXX..XXXB...', // row 20 - ankles/shoes
+  '...BXXX..XXXB...', // row 21 - shoes
+  '...BBBB..BBBB...', // row 22 - shoe outline
+  '................', // row 23 - empty
+];
 
-const DOWN_IDLE: string[] = [
+/* ── DOWN walk frame 1 (left foot forward) ────────────────── */
+const T_DOWN_WALK1: string[] = [
   '....BBBBBB......',
   '...BHHHHHHBh....',
-  '..BHHHHHHHHHB...',
   '..BHHHHHHHHhB...',
-  '..BSSSSSSSSB....',
-  '..BSESSSESB.....',
-  '..BSSSsSSSB.....',
-  '..BSSSMSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '...BDDBBDDB.....',
-  '...BDDBBDDB.....',
-  '...BDDBBDDB.....',
-  '...BXXBBXXB.....',
-  '..BXXXXBXXXB....',
-  '..BBBBBBBBBB....',
+  '..BHHhHHHHhHB...',
+  '..BSSSSSSSSSB...',
+  '..BSWESSWSEsB...',
+  '..BSSSSsSSSsB...',
+  '...BSSSMMSSsB...',
+  '...BSSSSSSSB....',
+  '....BOOOOB......',
+  '...BOOOOOOOB....',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...BDD....DDB...',
+  '..BDDB.....DDB..',
+  '..BXXB.....BXXB.',
+  '..BXXB....BXXXB.',
+  '.BXXXB....BBBBB.',
+  '.BBBBB..........',
   '................',
 ];
 
-const DOWN_WALK1: string[] = [
+/* ── DOWN walk frame 2 (right foot forward) ───────────────── */
+const T_DOWN_WALK2: string[] = [
   '....BBBBBB......',
   '...BHHHHHHBh....',
-  '..BHHHHHHHHHB...',
   '..BHHHHHHHHhB...',
-  '..BSSSSSSSSB....',
-  '..BSESSSESB.....',
-  '..BSSSsSSSB.....',
-  '..BSSSMSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '..BDDB..BDDB....',
-  '..BDDB...BDDB...',
-  '..BXXB...BXXB...',
-  '.BXXXXB.BXXXXB..',
-  '.BBBBB...BBBBB..',
-  '................',
+  '..BHHhHHHHhHB...',
+  '..BSSSSSSSSSB...',
+  '..BSWESSWSEsB...',
+  '..BSSSSsSSSsB...',
+  '...BSSSMMSSsB...',
+  '...BSSSSSSSB....',
+  '....BOOOOB......',
+  '...BOOOOOOOB....',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...DDB....BDD...',
+  '..BDDB.....BDD..',
+  '.BXXB......BXXB.',
+  '.BXXXB.....BXXB.',
+  '.BBBBB.....BXXXB',
+  '...........BBBBB',
   '................',
 ];
 
-const DOWN_WALK2: string[] = [
+/* ── UP (back-facing) idle ────────────────────────────────── */
+const T_UP_IDLE: string[] = [
   '....BBBBBB......',
   '...BHHHHHHBh....',
-  '..BHHHHHHHHHB...',
   '..BHHHHHHHHhB...',
-  '..BSSSSSSSSB....',
-  '..BSESSSESB.....',
-  '..BSSSsSSSB.....',
-  '..BSSSMSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '...BDDB.BDDB....',
-  '..BDDB...BDDB...',
-  '..BXXB...BXXB...',
-  '.BXXXXB.BXXXXB..',
-  '.BBBBB...BBBBB..',
-  '................',
+  '..BHHhHHHHhHB...',
+  '..BHHHHHHHHHB...',
+  '..BHHHHHHHHHB...',
+  '..BHHSSSSHHhB...',
+  '...BSSSSSSSB....',
+  '...BSSSSSSSB....',
+  '....BOOOOB......',
+  '...BOOOOOOOB....',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '....BDD..DDB....',
+  '....BDD..DDB....',
+  '....BDD..DDB....',
+  '...BXXX..XXXB...',
+  '...BXXX..XXXB...',
+  '...BBBB..BBBB...',
   '................',
 ];
 
-// ── UP (back-facing) ──────────────────────────────────────────
-
-const UP_IDLE: string[] = [
+/* ── UP walk frame 1 ──────────────────────────────────────── */
+const T_UP_WALK1: string[] = [
   '....BBBBBB......',
   '...BHHHHHHBh....',
+  '..BHHHHHHHHhB...',
+  '..BHHhHHHHhHB...',
   '..BHHHHHHHHHB...',
-  '..BHHHHHHHHHHB..',
   '..BHHHHHHHHHB...',
-  '..BHHHHHHHHB....',
-  '..BSSSSSSSSB....',
-  '..BSSSSSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '...BDDBBDDB.....',
-  '...BDDBBDDB.....',
-  '...BDDBBDDB.....',
-  '...BXXBBXXB.....',
-  '..BXXXXBXXXB....',
-  '..BBBBBBBBBB....',
+  '..BHHSSSSHHhB...',
+  '...BSSSSSSSB....',
+  '...BSSSSSSSB....',
+  '....BOOOOB......',
+  '...BOOOOOOOB....',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...BDD....DDB...',
+  '..BDDB.....DDB..',
+  '..BXXB.....BXXB.',
+  '..BXXB....BXXXB.',
+  '.BXXXB....BBBBB.',
+  '.BBBBB..........',
   '................',
 ];
 
-const UP_WALK1: string[] = [
+/* ── UP walk frame 2 ──────────────────────────────────────── */
+const T_UP_WALK2: string[] = [
   '....BBBBBB......',
   '...BHHHHHHBh....',
+  '..BHHHHHHHHhB...',
+  '..BHHhHHHHhHB...',
   '..BHHHHHHHHHB...',
-  '..BHHHHHHHHHHB..',
   '..BHHHHHHHHHB...',
-  '..BHHHHHHHHB....',
-  '..BSSSSSSSSB....',
-  '..BSSSSSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '..BDDB..BDDB....',
-  '..BDDB...BDDB...',
-  '..BXXB...BXXB...',
-  '.BXXXXB.BXXXXB..',
-  '.BBBBB...BBBBB..',
-  '................',
-  '................',
-];
-
-const UP_WALK2: string[] = [
-  '....BBBBBB......',
-  '...BHHHHHHBh....',
-  '..BHHHHHHHHHB...',
-  '..BHHHHHHHHHHB..',
-  '..BHHHHHHHHHB...',
-  '..BHHHHHHHHB....',
-  '..BSSSSSSSSB....',
-  '..BSSSSSSB......',
-  '...BSSSSB.......',
-  '...BOOOOB.......',
-  '..BOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '.BOOOOOOOOB.....',
-  '..BOOOOOOB......',
-  '..BOOOOOOB......',
-  '...BDDDDBB.....',
-  '...BDDB.BDDB....',
-  '..BDDB...BDDB...',
-  '..BXXB...BXXB...',
-  '.BXXXXB.BXXXXB..',
-  '.BBBBB...BBBBB..',
-  '................',
+  '..BHHSSSSHHhB...',
+  '...BSSSSSSSB....',
+  '...BSSSSSSSB....',
+  '....BOOOOB......',
+  '...BOOOOOOOB....',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '..BOoOOOOOoOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...DDB....BDD...',
+  '..BDDB.....BDD..',
+  '.BXXB......BXXB.',
+  '.BXXXB.....BXXB.',
+  '.BBBBB.....BXXXB',
+  '...........BBBBB',
   '................',
 ];
 
-// ── RIGHT (side-facing) ────────────────────────────────────────
-
-const RIGHT_IDLE: string[] = [
+/* ── RIGHT (side-facing) idle ─────────────────────────────── */
+const T_RIGHT_IDLE: string[] = [
   '.....BBBBBB.....',
   '....BHHHHHHBh...',
-  '...BHHHHHHHHHB..',
   '...BHHHHHHHHhB..',
+  '...BHHhHHHHhHB..',
   '...BSSSSSSSSBB..',
-  '...BSSSSSESBWB..',
-  '...BSSSsSSSBB...',
-  '...BSSSSSBB....',
+  '...BSSSSWESB.B..',
+  '...BSSSSsSSSBB..',
+  '...BSSSSSSBB....',
   '....BSSSSB......',
   '....BOOOOB......',
-  '...BOOOOOOB.....',
-  '..BOOOOOOOB.....',
-  '..BOOOOOOOOB....',
-  '..BOOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '....BDDDDBB....',
-  '....BDDBBDDB....',
-  '....BDDBBDDB....',
-  '....BDDBBDDB....',
-  '....BXXBBXXB....',
-  '...BXXXXBXXXB...',
-  '...BBBBBBBBBB...',
+  '...BOOOOOOOB....',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOOOB..',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '....BDD..DDB....',
+  '....BDD..DDB....',
+  '....BDD..DDB....',
+  '...BXXX..XXXB...',
+  '...BXXX..XXXB...',
+  '...BBBB..BBBB...',
   '................',
 ];
 
-const RIGHT_WALK1: string[] = [
+/* ── RIGHT walk frame 1 ──────────────────────────────────── */
+const T_RIGHT_WALK1: string[] = [
   '.....BBBBBB.....',
   '....BHHHHHHBh...',
-  '...BHHHHHHHHHB..',
   '...BHHHHHHHHhB..',
+  '...BHHhHHHHhHB..',
   '...BSSSSSSSSBB..',
-  '...BSSSSSESBWB..',
-  '...BSSSsSSSBB...',
-  '...BSSSSSBB....',
+  '...BSSSSWESB.B..',
+  '...BSSSSsSSSBB..',
+  '...BSSSSSSBB....',
   '....BSSSSB......',
   '....BOOOOB......',
-  '...BOOOOOOB.....',
-  '..BOOOOOOOB.....',
-  '..BOOOOOOOOB....',
-  '..BOOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '....BDDDDBB....',
-  '...BDDB..BDDB...',
-  '...BDDB...BDDB..',
-  '...BXXB...BXXB..',
-  '..BXXXXB.BXXXXB.',
-  '..BBBBB...BBBBB.',
-  '................',
+  '...BOOOOOOOB....',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOOOB..',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...BDD....DDB...',
+  '..BDDB.....DDB..',
+  '..BXXB.....BXXB.',
+  '..BXXB....BXXXB.',
+  '.BXXXB....BBBBB.',
+  '.BBBBB..........',
   '................',
 ];
 
-const RIGHT_WALK2: string[] = [
+/* ── RIGHT walk frame 2 ──────────────────────────────────── */
+const T_RIGHT_WALK2: string[] = [
   '.....BBBBBB.....',
   '....BHHHHHHBh...',
-  '...BHHHHHHHHHB..',
   '...BHHHHHHHHhB..',
+  '...BHHhHHHHhHB..',
   '...BSSSSSSSSBB..',
-  '...BSSSSSESBWB..',
-  '...BSSSsSSSBB...',
-  '...BSSSSSBB....',
+  '...BSSSSWESB.B..',
+  '...BSSSSsSSSBB..',
+  '...BSSSSSSBB....',
   '....BSSSSB......',
   '....BOOOOB......',
-  '...BOOOOOOB.....',
-  '..BOOOOOOOB.....',
-  '..BOOOOOOOOB....',
-  '..BOOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '...BOOOOOOB.....',
-  '....BDDDDBB....',
-  '....BDDB.BDDB...',
-  '...BDDB...BDDB..',
-  '...BXXB...BXXB..',
-  '..BXXXXB.BXXXXB.',
-  '..BBBBB...BBBBB.',
-  '................',
+  '...BOOOOOOOB....',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOOOB..',
+  '...BOoOOOOOOB...',
+  '...BOOOOOOOB....',
+  '...BODDDDOOB....',
+  '....BDDDDDB.....',
+  '...DDB....BDD...',
+  '..BDDB.....BDD..',
+  '.BXXB......BXXB.',
+  '.BXXXB.....BXXB.',
+  '.BBBBB.....BXXXB',
+  '...........BBBBB',
   '................',
 ];
 
@@ -306,16 +296,17 @@ function templateToSprite(
   template: string[],
   palette: Record<string, string>,
 ): SpriteData {
-  return template.map((row) =>
-    row.split('').map((ch) => palette[ch] ?? ''),
-  );
+  return template.map((row) => {
+    // Pad or trim to exactly 16 chars
+    const normalized = row.padEnd(16, '.').slice(0, 16);
+    return normalized.split('').map((ch) => palette[ch] ?? '');
+  });
 }
 
 function flipHorizontal(sprite: SpriteData): SpriteData {
   return sprite.map((row) => [...row].reverse());
 }
 
-/** Build a full palette from an agent's appearance */
 function buildPalette(appearance: AgentAppearance): Record<string, string> {
   const { hairColor, outfitColor, skinColor } = appearance;
   return {
@@ -323,14 +314,14 @@ function buildPalette(appearance: AgentAppearance): Record<string, string> {
     h: darken(hairColor, 0.25),
     S: skinColor,
     s: darken(skinColor, 0.15),
-    E: '#1a1a2e',
+    E: '#1a1020', // pupil
+    W: '#ffffff', // eye white
     M: darken(skinColor, 0.3),
     O: outfitColor,
     o: darken(outfitColor, 0.15),
     D: darken(outfitColor, 0.35),
     X: darken(outfitColor, 0.5),
-    B: '#1a1020',
-    W: '#ffffff',
+    B: '#1a1020', // outline
     '.': '',
   };
 }
@@ -344,7 +335,6 @@ export interface CharacterSpriteSet {
   walk: Record<AgentDirection, [SpriteData, SpriteData, SpriteData]>;
 }
 
-/** Sprite cache keyed by a hash of the appearance */
 const spriteCache = new Map<string, CharacterSpriteSet>();
 
 function appearanceKey(appearance: AgentAppearance): string {
@@ -352,9 +342,8 @@ function appearanceKey(appearance: AgentAppearance): string {
 }
 
 /**
- * Generate a full set of pixel-art character sprites for an agent appearance.
- * Returns idle sprites (4 directions) and walk sprites (4 directions x 3 frames).
- * Walk animation is played as [0, 1, 0, 2] (step-rest-step pattern).
+ * Generate a full set of pixel-art character sprites for an agent.
+ * Walk animation plays as [idle, walk1, idle, walk2] cycle.
  */
 export function getCharacterSprites(appearance: AgentAppearance): CharacterSpriteSet {
   const key = appearanceKey(appearance);
@@ -363,18 +352,17 @@ export function getCharacterSprites(appearance: AgentAppearance): CharacterSprit
 
   const palette = buildPalette(appearance);
 
-  // Build all sprites from templates
-  const downIdle = templateToSprite(DOWN_IDLE, palette);
-  const downW1 = templateToSprite(DOWN_WALK1, palette);
-  const downW2 = templateToSprite(DOWN_WALK2, palette);
+  const downIdle = templateToSprite(T_DOWN_IDLE, palette);
+  const downW1 = templateToSprite(T_DOWN_WALK1, palette);
+  const downW2 = templateToSprite(T_DOWN_WALK2, palette);
 
-  const upIdle = templateToSprite(UP_IDLE, palette);
-  const upW1 = templateToSprite(UP_WALK1, palette);
-  const upW2 = templateToSprite(UP_WALK2, palette);
+  const upIdle = templateToSprite(T_UP_IDLE, palette);
+  const upW1 = templateToSprite(T_UP_WALK1, palette);
+  const upW2 = templateToSprite(T_UP_WALK2, palette);
 
-  const rightIdle = templateToSprite(RIGHT_IDLE, palette);
-  const rightW1 = templateToSprite(RIGHT_WALK1, palette);
-  const rightW2 = templateToSprite(RIGHT_WALK2, palette);
+  const rightIdle = templateToSprite(T_RIGHT_IDLE, palette);
+  const rightW1 = templateToSprite(T_RIGHT_WALK1, palette);
+  const rightW2 = templateToSprite(T_RIGHT_WALK2, palette);
 
   const leftIdle = flipHorizontal(rightIdle);
   const leftW1 = flipHorizontal(rightW1);
@@ -400,73 +388,9 @@ export function getCharacterSprites(appearance: AgentAppearance): CharacterSprit
 }
 
 // ════════════════════════════════════════════════════════════════
-// Canvas rendering helpers
+// Accessory overlay drawing
 // ════════════════════════════════════════════════════════════════
 
-/** Sprite canvas cache for zoom levels */
-const canvasCache = new Map<string, HTMLCanvasElement>();
-
-function spriteCacheKey(sprite: SpriteData, zoom: number): string {
-  // Use first and last row + zoom as a quick hash
-  const h = sprite.length > 0
-    ? sprite[0].join('') + sprite[sprite.length - 1].join('') + zoom
-    : '' + zoom;
-  return h;
-}
-
-/**
- * Get a pre-rendered canvas for a sprite at a given zoom level.
- * Pixels are rendered as filled rectangles for pixel-perfect scaling.
- */
-export function getCachedSpriteCanvas(
-  sprite: SpriteData,
-  zoom: number,
-): HTMLCanvasElement {
-  const key = spriteCacheKey(sprite, zoom);
-  const cached = canvasCache.get(key);
-  if (cached) return cached;
-
-  const rows = sprite.length;
-  const cols = rows > 0 ? sprite[0].length : 0;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = cols * zoom;
-  canvas.height = rows * zoom;
-  const ctx = canvas.getContext('2d')!;
-  ctx.imageSmoothingEnabled = false;
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const color = sprite[r][c];
-      if (color === '') continue;
-      ctx.fillStyle = color;
-      ctx.fillRect(c * zoom, r * zoom, zoom, zoom);
-    }
-  }
-
-  canvasCache.set(key, canvas);
-  return canvas;
-}
-
-/**
- * Draw a sprite directly to a canvas context at a world position.
- * Uses drawImage with a pre-cached canvas for performance.
- */
-export function drawSpriteAt(
-  ctx: CanvasRenderingContext2D,
-  sprite: SpriteData,
-  worldX: number,
-  worldY: number,
-  zoom: number,
-): void {
-  const cached = getCachedSpriteCanvas(sprite, zoom);
-  ctx.drawImage(cached, worldX, worldY);
-}
-
-/**
- * Draw an accessory overlay on top of a character sprite.
- * Accessories modify specific pixels on the sprite.
- */
 export function drawAccessoryOverlay(
   ctx: CanvasRenderingContext2D,
   accessory: string,
@@ -483,11 +407,8 @@ export function drawAccessoryOverlay(
     case 'glasses_neon': {
       const color = accessory === 'glasses_neon' ? '#10b981' : accessory === 'glasses_round' ? '#92400e' : '#374151';
       ctx.fillStyle = color;
-      // Left lens
-      ctx.fillRect(worldX + 4 * z, worldY + 5 * z, 2 * z, 1 * z);
-      // Right lens
-      ctx.fillRect(worldX + 8 * z, worldY + 5 * z, 2 * z, 1 * z);
-      // Bridge
+      ctx.fillRect(worldX + 3 * z, worldY + 5 * z, 3 * z, 1 * z);
+      ctx.fillRect(worldX + 8 * z, worldY + 5 * z, 3 * z, 1 * z);
       ctx.fillRect(worldX + 6 * z, worldY + 5 * z, 2 * z, 1 * z);
       break;
     }
@@ -495,12 +416,9 @@ export function drawAccessoryOverlay(
     case 'headphones_pink': {
       const color = accessory === 'headphones_pink' ? '#db2777' : '#222233';
       ctx.fillStyle = color;
-      // Left earpiece
-      ctx.fillRect(worldX + 2 * z, worldY + 2 * z, 1 * z, 3 * z);
-      // Right earpiece
-      ctx.fillRect(worldX + 12 * z, worldY + 2 * z, 1 * z, 3 * z);
-      // Band
-      ctx.fillRect(worldX + 3 * z, worldY + 1 * z, 10 * z, 1 * z);
+      ctx.fillRect(worldX + 2 * z, worldY + 1 * z, 1 * z, 4 * z);
+      ctx.fillRect(worldX + 13 * z, worldY + 1 * z, 1 * z, 4 * z);
+      ctx.fillRect(worldX + 3 * z, worldY + 0 * z, 10 * z, 1 * z);
       break;
     }
     case 'hat':
@@ -510,7 +428,7 @@ export function drawAccessoryOverlay(
       const color = accessory === 'hat_beanie' ? '#7c3aed' : accessory === 'hat_cowboy' ? '#78350f' : darken(outfitColor, 0.2);
       ctx.fillStyle = color;
       ctx.fillRect(worldX + 4 * z, worldY - 1 * z, 8 * z, 2 * z);
-      ctx.fillRect(worldX + 3 * z, worldY + 0 * z, 10 * z, 1 * z);
+      ctx.fillRect(worldX + 3 * z, worldY + 0, 10 * z, 1 * z);
       break;
     }
     case 'badge':

@@ -30,7 +30,7 @@ interface MiniMapProps {
   onClickMiniMap?: (worldX: number, worldY: number) => void;
 }
 
-const TILE_SIZE = 32;
+const TILE_SIZE = 16;
 
 export default function MiniMap({
   rooms,

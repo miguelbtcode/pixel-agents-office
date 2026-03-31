@@ -38,7 +38,7 @@ export default function OfficeCanvas() {
   const [selectedAgentId, setSelectedAgentId] = useState<AgentId | null>(null);
 
   // Camera state mirrored into React for MiniMap re-renders
-  const [cameraState, setCameraState] = useState({ cameraX: 0, cameraY: 0, zoom: 1.5 });
+  const [cameraState, setCameraState] = useState({ cameraX: 0, cameraY: 0, zoom: 2 });
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   // Per-agent SpriteSheet instances keyed by AgentId
@@ -104,9 +104,9 @@ export default function OfficeCanvas() {
     rendererRef.current = renderer;
 
     // Center camera on workspace initially
-    renderer.cameraX = 4 * TILE_SIZE;
-    renderer.cameraY = 2 * TILE_SIZE;
-    renderer.zoom = 1.5;
+    renderer.cameraX = 2 * TILE_SIZE;
+    renderer.cameraY = 1 * TILE_SIZE;
+    renderer.zoom = 3;
 
     // Build a SpriteSheet per agent
     const agentIds: AgentId[] = ['luna', 'max', 'ava', 'sam', 'rio'];
@@ -509,7 +509,7 @@ export default function OfficeCanvas() {
     const r = rendererRef.current;
     if (!r) return;
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    r.zoom = Math.max(0.5, Math.min(3, r.zoom * zoomFactor));
+    r.zoom = Math.max(1, Math.min(6, r.zoom * zoomFactor));
   }, []);
 
   // ── Touch support ──────────────────────────────────────────────
@@ -559,7 +559,7 @@ export default function OfficeCanvas() {
       );
       if (lastPinchDistance.current !== null) {
         const delta = newDist - lastPinchDistance.current;
-        r.zoom = Math.max(0.5, Math.min(3, r.zoom + delta * 0.01));
+        r.zoom = Math.max(1, Math.min(6, r.zoom + delta * 0.01));
       }
       lastPinchDistance.current = newDist;
     } else if (e.touches.length === 1 && touchStart.current) {
