@@ -127,8 +127,8 @@ class Pathfinder {
       path.unshift({
         x: current.x,
         y: current.y,
-        px: current.x * 32,
-        py: current.y * 32,
+        px: current.x * 16,
+        py: current.y * 16,
       });
       current = current.parent;
     }

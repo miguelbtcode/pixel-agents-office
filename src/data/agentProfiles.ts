@@ -6,7 +6,7 @@ export const agentProfiles: Agent[] = [
     name: 'Luna',
     role: 'Tech Lead',
     primaryColor: '#a78bfa',
-    position: { x: 10, y: 8, px: 10 * 32, py: 8 * 32 },
+    position: { x: 10, y: 8, px: 10 * 16, py: 8 * 16 },
     state: 'idle',
     direction: 'down',
     appearance: {
@@ -22,7 +22,7 @@ export const agentProfiles: Agent[] = [
     name: 'Max',
     role: 'Frontend Dev',
     primaryColor: '#34d399',
-    position: { x: 14, y: 8, px: 14 * 32, py: 8 * 32 },
+    position: { x: 14, y: 8, px: 14 * 16, py: 8 * 16 },
     state: 'idle',
     direction: 'down',
     appearance: {
@@ -38,7 +38,7 @@ export const agentProfiles: Agent[] = [
     name: 'Ava',
     role: 'Backend Dev',
     primaryColor: '#60a5fa',
-    position: { x: 18, y: 8, px: 18 * 32, py: 8 * 32 },
+    position: { x: 18, y: 8, px: 18 * 16, py: 8 * 16 },
     state: 'idle',
     direction: 'down',
     appearance: {
@@ -54,7 +54,7 @@ export const agentProfiles: Agent[] = [
     name: 'Sam',
     role: 'QA Engineer',
     primaryColor: '#fbbf24',
-    position: { x: 22, y: 8, px: 22 * 32, py: 8 * 32 },
+    position: { x: 22, y: 8, px: 22 * 16, py: 8 * 16 },
     state: 'idle',
     direction: 'down',
     appearance: {
@@ -70,7 +70,7 @@ export const agentProfiles: Agent[] = [
     name: 'Rio',
     role: 'DevOps/Fullstack',
     primaryColor: '#f87171',
-    position: { x: 26, y: 8, px: 26 * 32, py: 8 * 32 },
+    position: { x: 26, y: 8, px: 26 * 16, py: 8 * 16 },
     state: 'idle',
     direction: 'down',
     appearance: {
