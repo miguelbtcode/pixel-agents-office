@@ -20,7 +20,9 @@ const TILE_BORDER_COLORS: Record<number, string> = {
 
 class Renderer {
   private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  private ctx!: CanvasRenderingContext2D;
+  private _hasContext = false;
   private tileMap: TileMap;
 
   // Camera state (public so OfficeCanvas can manipulate)
@@ -32,12 +34,12 @@ class Renderer {
   private time: number;
 
   constructor(canvas: HTMLCanvasElement, tileMap: TileMap) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('Renderer: unable to obtain 2D canvas context');
-    }
     this.canvas = canvas;
-    this.ctx = ctx;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      this.ctx = ctx;
+      this._hasContext = true;
+    }
     this.tileMap = tileMap;
     this.cameraX = 0;
     this.cameraY = 0;
@@ -80,7 +82,12 @@ class Renderer {
   // Core operations
   // ─────────────────────────────────────────────
 
+  get isReady(): boolean {
+    return this._hasContext;
+  }
+
   clear(): void {
+    if (!this._hasContext) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = '#0d1117';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -96,6 +103,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   drawMap(furniture: FurnitureItem[]): void {
+    if (!this._hasContext) return;
     this.ctx.save();
     this.applyCamera();
 
@@ -131,6 +139,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   private drawTile(x: number, y: number, tileType: number): void {
+    if (!this._hasContext) return;
     const px = x * TILE_SIZE;
     const py = y * TILE_SIZE;
     const s = TILE_SIZE;
@@ -206,6 +215,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   private drawFurniture(item: FurnitureItem): void {
+    if (!this._hasContext) return;
     const px = item.x * TILE_SIZE;
     const py = item.y * TILE_SIZE;
     const pw = item.width * TILE_SIZE;
@@ -318,6 +328,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   drawAgent(agent: Agent, frameIndex: number): void {
+    if (!this._hasContext) return;
     this.ctx.save();
     this.applyCamera();
 
@@ -457,6 +468,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   drawSpeechBubble(agent: Agent, text: string): void {
+    if (!this._hasContext) return;
     this.ctx.save();
     this.applyCamera();
 
@@ -530,6 +542,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   drawAgentNameTag(agent: Agent): void {
+    if (!this._hasContext) return;
     this.ctx.save();
     this.applyCamera();
 
@@ -576,6 +589,7 @@ class Renderer {
     color: string,
     isValid: boolean
   ): void {
+    if (!this._hasContext) return;
     this.ctx.save();
     this.applyCamera();
 
@@ -604,6 +618,7 @@ class Renderer {
   // ─────────────────────────────────────────────
 
   private applyCamera(): void {
+    if (!this._hasContext) return;
     this.ctx.setTransform(
       this.zoom, 0,
       0, this.zoom,

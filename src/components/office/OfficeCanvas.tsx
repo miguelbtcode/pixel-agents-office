@@ -91,6 +91,9 @@ export default function OfficeCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    let cleanup: (() => void) | undefined;
+
+    try {
     // ── Initialize core engine objects ──────────────────────────
     const tileMap = new TileMap(mapLayout);
     tileMapRef.current = tileMap;
@@ -330,10 +333,10 @@ export default function OfficeCanvas() {
 
     gameLoop.start();
 
-    // Mark as loaded after first frame
+    // Mark as loaded — canvas is ready
     setIsLoading(false);
 
-    return () => {
+    cleanup = () => {
       gameLoop.stop();
       scheduler.stop();
       schedulerRef.current = null;
@@ -342,6 +345,13 @@ export default function OfficeCanvas() {
       unsubFurniture();
       unsubEditor();
     };
+    } catch (err) {
+      console.error('[OfficeCanvas] initialization error:', err);
+      // Always dismiss loading screen so user sees something
+      setIsLoading(false);
+    }
+
+    return () => cleanup?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
