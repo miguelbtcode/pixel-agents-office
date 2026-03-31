@@ -24,7 +24,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     },
-    [onClose]
+    [onClose],
   );
 
   useEffect(() => {
@@ -45,7 +45,8 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ backgroundColor: 'rgba(10,10,20,0.75)' }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -53,27 +54,28 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       {/* Panel */}
       <div
         className={clsx(
-          'relative w-full flex flex-col bg-slate-900 border-4 border-slate-600',
-          'animate-in fade-in slide-in-from-bottom-4 duration-150',
-          // Pixel corner accents via outline
-          'outline outline-2 outline-offset-[-6px] outline-slate-700',
-          sizeClasses[size]
+          'relative w-full flex flex-col panel-glass animate-fade-in',
+          sizeClasses[size],
         )}
         style={{ maxHeight: '90vh' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b-2 border-slate-700 bg-slate-800 shrink-0">
-          <span className="font-pixel text-[9px] text-violet-300 tracking-wide">{title}</span>
+        <div
+          className="flex items-center justify-between px-4 py-3 shrink-0"
+          style={{ borderBottom: '2px solid var(--color-border)' }}
+        >
+          <span className="font-pixel text-[9px] tracking-wide" style={{ color: 'var(--color-accent)' }}>{title}</span>
           <button
             onClick={onClose}
-            className="font-pixel text-[9px] text-slate-400 hover:text-white leading-none w-6 h-6 flex items-center justify-center border border-slate-600 hover:border-slate-400 transition-colors"
+            className="font-pixel text-[9px] leading-none w-6 h-6 flex items-center justify-center transition-colors"
+            style={{ color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
             aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        {/* Scrollable content */}
+        {/* Content */}
         <div className="overflow-y-auto flex-1 p-4">{children}</div>
       </div>
     </div>

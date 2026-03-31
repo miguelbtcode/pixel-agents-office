@@ -642,11 +642,11 @@ export default function OfficeCanvas() {
     <div className="relative w-full h-full overflow-hidden no-select">
       {/* Loading overlay */}
       {isLoading && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900">
-          <div className="font-pixel text-[10px] text-violet-300 tracking-widest mb-4">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{ backgroundColor: '#12121e' }}>
+          <div className="font-pixel text-[10px] tracking-widest mb-4" style={{ color: 'var(--color-accent)' }}>
             PIXEL AGENTS OFFICE
           </div>
-          <div className="font-pixel text-[8px] text-slate-400 tracking-widest animate-pulse">
+          <div className="font-pixel text-[8px] tracking-widest animate-pulse" style={{ color: 'var(--color-text-muted)' }}>
             LOADING...
           </div>
         </div>
@@ -670,8 +670,8 @@ export default function OfficeCanvas() {
       {/* Editor mode placement hint overlay */}
       {isEditorMode && selectedCatalogId && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="bg-slate-900/80 border border-violet-500 px-3 py-1">
-            <span className="font-pixel text-[7px] text-violet-300 tracking-wide">
+          <div className="panel-glass px-3 py-1">
+            <span className="font-pixel text-[7px] tracking-wide" style={{ color: 'var(--color-accent-green)' }}>
               CLICK TO PLACE • ESC TO CANCEL
             </span>
           </div>

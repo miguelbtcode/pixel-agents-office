@@ -32,17 +32,17 @@ export default function FurniturePanel() {
   return (
     <Panel title="FURNITURE" className="flex flex-col h-full">
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-px p-1 bg-slate-900 border-b-2 border-slate-700 shrink-0">
+      <div className="flex flex-wrap gap-px p-1 shrink-0" style={{ borderBottom: '1px solid var(--color-border)' }}>
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
-            className={[
-              'font-pixel text-[7px] px-2 py-1 transition-colors',
-              activeCategory === cat.id
-                ? 'bg-violet-700 text-white border border-violet-500'
-                : 'bg-slate-700 text-slate-400 border border-slate-600 hover:text-slate-200 hover:border-slate-500',
-            ].join(' ')}
+            className="font-pixel text-[7px] px-2 py-1 transition-colors"
+            style={{
+              backgroundColor: activeCategory === cat.id ? 'rgba(90,140,255,0.2)' : 'transparent',
+              border: `1px solid ${activeCategory === cat.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+              color: activeCategory === cat.id ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            }}
           >
             {cat.label.toUpperCase()}
           </button>
@@ -59,24 +59,20 @@ export default function FurniturePanel() {
                 key={item.id}
                 onClick={() => selectCatalogItem(isSelected ? null : item.id)}
                 title={item.description}
-                className={[
-                  'flex flex-col items-center gap-1 p-2 border-2 transition-colors',
-                  isSelected
-                    ? 'border-violet-400 bg-violet-900/40'
-                    : 'border-slate-600 bg-slate-700 hover:border-slate-400 hover:bg-slate-600',
-                ].join(' ')}
+                className="flex flex-col items-center gap-1 p-2 transition-colors"
+                style={{
+                  border: `2px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  backgroundColor: isSelected ? 'rgba(90,140,255,0.1)' : 'rgba(255,255,255,0.03)',
+                }}
               >
-                {/* Color preview square */}
                 <div
-                  className="w-8 h-8 shrink-0 border border-slate-500"
-                  style={{ backgroundColor: item.color }}
+                  className="w-8 h-8 shrink-0"
+                  style={{ backgroundColor: item.color, border: '1px solid var(--color-border)' }}
                 />
-                {/* Name */}
-                <span className="font-pixel text-[7px] text-slate-200 text-center leading-tight">
+                <span className="font-pixel text-[7px] text-center leading-tight" style={{ color: 'var(--color-text)' }}>
                   {item.name}
                 </span>
-                {/* Size */}
-                <span className="font-pixel text-[6px] text-slate-500">
+                <span className="font-pixel text-[6px]" style={{ color: 'var(--color-text-muted)' }}>
                   {item.tileWidth}×{item.tileHeight}
                 </span>
               </button>
@@ -86,13 +82,13 @@ export default function FurniturePanel() {
       </div>
 
       {/* Instruction footer */}
-      <div className="shrink-0 px-2 py-2 bg-slate-900 border-t-2 border-slate-700">
+      <div className="shrink-0 px-2 py-2" style={{ borderTop: '1px solid var(--color-border)' }}>
         {selectedCatalogId ? (
-          <p className="font-pixel text-[6px] text-violet-300 leading-relaxed text-center">
+          <p className="font-pixel text-[6px] leading-relaxed text-center" style={{ color: 'var(--color-accent-green)' }}>
             CLICK CANVAS TO PLACE • ESC TO CANCEL
           </p>
         ) : (
-          <p className="font-pixel text-[6px] text-slate-500 leading-relaxed text-center">
+          <p className="font-pixel text-[6px] leading-relaxed text-center" style={{ color: 'var(--color-text-muted)' }}>
             SELECT AN ITEM TO PLACE
           </p>
         )}

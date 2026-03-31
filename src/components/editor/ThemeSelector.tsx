@@ -46,7 +46,6 @@ const THEMES: OfficeThemeConfig[] = [
   },
 ];
 
-// Small preview swatch pairs per theme
 const THEME_SWATCHES: Record<OfficeTheme, string[]> = {
   modern: ['#e2e8f0', '#94a3b8', '#3b82f6'],
   retro: ['#d6b896', '#8b6343', '#f59e0b'],
@@ -60,7 +59,7 @@ export default function ThemeSelector() {
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-pixel text-[7px] text-slate-400 tracking-wide px-1">THEME</span>
+      <span className="font-pixel text-[7px] tracking-wide px-1" style={{ color: 'var(--color-text-muted)' }}>THEME</span>
       <div className="flex gap-1 flex-wrap">
         {THEMES.map((theme) => {
           const isActive = activeTheme === theme.id;
@@ -70,29 +69,24 @@ export default function ThemeSelector() {
               key={theme.id}
               onClick={() => setTheme(theme.id)}
               title={theme.name}
-              className={[
-                'flex flex-col items-center gap-1 px-2 py-2 border-2 transition-colors',
-                isActive
-                  ? 'border-violet-400 bg-violet-900/40'
-                  : 'border-slate-600 bg-slate-800 hover:border-slate-400 hover:bg-slate-700',
-              ].join(' ')}
+              className="flex flex-col items-center gap-1 px-2 py-2 transition-colors"
+              style={{
+                border: `2px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                backgroundColor: isActive ? 'rgba(90,140,255,0.1)' : 'transparent',
+              }}
             >
-              {/* Color swatches preview */}
               <div className="flex gap-px">
                 {swatches.map((color, i) => (
                   <div
                     key={i}
-                    className="w-3 h-3 border border-slate-700"
-                    style={{ backgroundColor: color }}
+                    className="w-3 h-3"
+                    style={{ backgroundColor: color, border: '1px solid var(--color-border)' }}
                   />
                 ))}
               </div>
-              {/* Theme name */}
               <span
-                className={[
-                  'font-pixel text-[7px]',
-                  isActive ? 'text-violet-300' : 'text-slate-400',
-                ].join(' ')}
+                className="font-pixel text-[7px]"
+                style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
               >
                 {theme.name.toUpperCase()}
               </span>
